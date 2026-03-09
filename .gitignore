@@ -1,0 +1,8 @@
+# Ignorar archivos generados por emu8086
+*.exe
+*.obj
+*.bin
+*.com
+*.map
+*.symbol
+*.~asm
