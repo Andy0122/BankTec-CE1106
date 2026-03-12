@@ -21,4 +21,13 @@
     msgDespedida db 0Dh, 0Ah, ">> Gracias por usar BankTec. Cerrando sistema...$"
     msgPausa     db 0Dh, 0Ah, 0Dh, 0Ah, "Presione cualquier tecla para continuar...$"
       
-    msgConstruccion db 0Dh, 0Ah, 0Dh, 0Ah, ">> FUNCION EN CONSTRUCCION <<", 0Dh, 0Ah, "$" 
+    msgConstruccion db 0Dh, 0Ah, 0Dh, 0Ah, ">> FUNCION EN CONSTRUCCION <<", 0Dh, 0Ah, "$"      
+    
+
+    
+    ; ---MENSAJES DE ERROR ESPECIFICOS ---
+    msgErrMonto  db 0Dh, 0Ah, ">> ERROR: Monto invalido. Contiene letras o excede el limite de 429,496.7295", 0Dh, 0Ah, "$"
+    msgErrCuenta db 0Dh, 0Ah, ">> ERROR: Numero de cuenta inexistente en el sistema.", 0Dh, 0Ah, "$"
+    msgErrInact  db 0Dh, 0Ah, ">> ERROR: La operacion no se puede realizar. La cuenta esta inactiva.", 0Dh, 0Ah, "$"
+    msgErrFondos db 0Dh, 0Ah, ">> ERROR: Fondos insuficientes para realizar el retiro.", 0Dh, 0Ah, "$"
+    msgErrExiste db 0Dh, 0Ah, ">> ERROR: El numero de cuenta ya se encuentra registrado.", 0Dh, 0Ah, "$"

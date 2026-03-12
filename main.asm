@@ -7,7 +7,7 @@
     ; =================================================================
     include interfaz.asm    ; <-- Aqui se cargan todos los textos del menu
     
-    ; include vars.asm      ; <-- Aqui se cargaran la estructura de memoria luego   
+    include vars.asm        ; <-- Aqui se cargan las estructuras de memoria  
     
     
 .code
@@ -44,7 +44,9 @@ ciclo_principal:
     cmp al, '6'
     je op_desactivar
     cmp al, '7'
-    je op_salir
+    je op_salir  
+    cmp al, '8'
+    je op_prueba
 
     ; Manejo de excepcion para selecciones fuera de rango.
     mov ah, 09h
@@ -59,7 +61,7 @@ ciclo_principal:
 
 op_crear:
     call CrearCuenta
-    jmp pausa_menu
+    jmp pausa_menu 
 
 op_depositar:
     call DepositarDinero
@@ -89,7 +91,36 @@ op_salir:
 
     mov ah, 4Ch
     int 21h
+             
+op_prueba:
 
+    mov ah, 09h
+    lea dx, msgPausa 
+    int 21h
+
+    call LeerYFormatearSaldo
+
+    call ConvertirCadenaA32Bits
+
+    ; VALIDADOR DE DESBORDAMIENTO 
+    cmp error_entrada, 1
+    je rechazar_monto
+
+    mov ah, 02h
+    mov dl, '-'
+    int 21h
+    mov dl, '>'
+    int 21h
+    call ImprimirSaldo
+    jmp pausa_menu
+
+rechazar_monto:
+    mov ah, 09h
+    lea dx, msgErrMonto
+    int 21h
+    jmp pausa_menu
+             
+   
 ; =====================================================================
 ; UTILIDADES DE INTERFAZ
 ; =====================================================================
@@ -109,6 +140,7 @@ pausa_menu:
 ; INCLUSION DE DEPENDENCIAS
 ; =============================================================================
 ; Incorporacion de la logica de negocio externa en tiempo de ensamblado.
-include modulos.asm   
+include modulos.asm
+include conversiones.asm   
 
 end main
