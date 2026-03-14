@@ -27,13 +27,18 @@
     
     ; ---MENSAJES DE ERROR ESPECIFICOS ---
     msgErrMonto  db 0Dh, 0Ah, ">> ERROR: Monto invalido. Contiene letras o excede el limite de 429,496.7295", 0Dh, 0Ah, "$"
+    msgErrFormato  db 0Dh, 0Ah, ">> ERROR: Formato invalido. Ingrese unicamente numeros.", 0Dh, 0Ah, "$"
     msgErrCuenta db 0Dh, 0Ah, ">> ERROR: Numero de cuenta inexistente en el sistema.", 0Dh, 0Ah, "$"
     msgErrInact  db 0Dh, 0Ah, ">> ERROR: La operacion no se puede realizar. La cuenta esta inactiva.", 0Dh, 0Ah, "$"
     msgErrFondos db 0Dh, 0Ah, ">> ERROR: Fondos insuficientes para realizar el retiro.", 0Dh, 0Ah, "$"
     msgErrExiste db 0Dh, 0Ah, ">> ERROR: El numero de cuenta ya se encuentra registrado.", 0Dh, 0Ah, "$"
+    msgErrLleno    db 0Dh, 0Ah, ">> ERROR: Sistema lleno. Limite de 10 cuentas alcanzado.", 0Dh, 0Ah, "$"
+    msgErrOverflow db 0Dh, 0Ah, ">> ERROR: La operacion excede el limite maximo de los 32 bits.", 0Dh, 0Ah, "$"
     
     ; --- MENSAJES DE INTERACCION ---
     msgPedirCuenta db 0Dh, 0Ah, ">> Ingrese el numero de cuenta: $"
+    msgPedirNombre db 0Dh, 0Ah, ">> Ingrese el nombre del titular (max 20 caracteres): $"
     msgPedirMonto  db 0Dh, 0Ah, ">> Ingrese el monto: $"
     msgExito       db 0Dh, 0Ah, ">> Operacion realizada con exito.", 0Dh, 0Ah, "$"
+    msgNombreEs    db 0Dh, 0Ah, ">> Titular: $"
     msgSaldoEs     db 0Dh, 0Ah, ">> El saldo actual de la cuenta es: $"

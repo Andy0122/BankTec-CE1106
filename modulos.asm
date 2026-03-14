@@ -23,6 +23,9 @@ CrearCuenta proc
     call LeerYFormatearSaldo
     call ConvertirCadenaA32Bits
     
+    cmp error_entrada, 1
+    je error_formato_cuenta
+    
     ; Guardamos el numero digitado en DX para usarlo de referencia
     mov dx, val_bajo
     push dx ; Protegemos el numero en la pila
@@ -47,12 +50,15 @@ skip_check:
 buscar_espacio:
     mov al, [bx + OFS_ESTADO]
     cmp al, 0
-    je pedir_saldo
+    je pedir_nombre_y_saldo
     add bx, TAMANO_REGISTRO
     loop buscar_espacio
 
     ; Si llega aqui, no hay espacio (Retornamos)
     pop dx
+    mov ah, 09h
+    lea dx, msgErrLleno
+    int 21h
     ret
 
 error_existe:
@@ -62,7 +68,28 @@ error_existe:
     int 21h
     ret
 
-pedir_saldo:
+pedir_nombre_y_saldo:
+    mov ah, 09h
+    lea dx, msgPedirNombre
+    int 21h
+
+    push bx ; Proteger puntero de la cuenta actual
+    lea di, [bx + OFS_NOMBRE] ; DI apuntara al offset del nombre en el arreglo
+    mov cx, 20 ; Limite de 20 caracteres
+
+leer_char:
+    mov ah, 01h
+    int 21h
+    cmp al, 0Dh
+    je fin_nombre
+    mov [di], al ; Guardar la letra en el arreglo
+    inc di
+    loop leer_char
+
+fin_nombre:
+    mov byte ptr [di], '$' ; Agregar el terminador de cadena para imprimirlo despues
+    pop bx
+    
     ; 4. Pedir el saldo inicial
     push bx ; Protegemos la direccion de memoria encontrada
     
@@ -98,6 +125,12 @@ error_monto_crear:
     lea dx, msgErrMonto
     int 21h
     ret
+    
+error_formato_cuenta:
+    mov ah, 09h
+    lea dx, msgErrFormato
+    int 21h
+    ret    
 CrearCuenta endp
 
 ; -----------------------------------------------------------------------------
@@ -116,25 +149,34 @@ DepositarDinero proc
     int 21h
     call LeerYFormatearSaldo
     call ConvertirCadenaA32Bits
+    cmp error_entrada, 1
+    je error_formato_cuenta_dep
     mov dx, val_bajo
 
     ; 2. Buscar cuenta
     lea bx, db_cuentas
     mov cx, MAX_CUENTAS
 buscar_deposito:
-    mov al, [bx + OFS_ESTADO]
-    cmp al, 1
-    jne sig_deposito
     mov ax, [bx + OFS_NUMERO]
     cmp ax, dx
-    je cuenta_hallada_deposito
-sig_deposito:
+    je verificar_estado_dep
     add bx, TAMANO_REGISTRO
     loop buscar_deposito
 
-    ; Si no encuentra
+    ; Si no encuentra el numero de cuenta
     mov ah, 09h
     lea dx, msgErrCuenta
+    int 21h
+    ret
+
+verificar_estado_dep:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    je cuenta_hallada_deposito
+    
+    ; Si existe pero esta inactiva (estado = 0)
+    mov ah, 09h
+    lea dx, msgErrInact
     int 21h
     ret
 
@@ -151,23 +193,39 @@ cuenta_hallada_deposito:
     cmp error_entrada, 1
     je error_monto_dep
     
-    ; 4. Sumar (ADD y ADC para los 32 bits)
+    ; 4. Sumar validando el desbordamiento de 32 bits (Carry Flag)
     mov ax, word ptr [bx + OFS_SALDO]
+    mov cx, word ptr [bx + OFS_SALDO + 2] 
+
     add ax, val_bajo
-    mov word ptr [bx + OFS_SALDO], ax
+    adc cx, val_alto
     
-    mov ax, word ptr [bx + OFS_SALDO + 2]
-    adc ax, val_alto
-    mov word ptr [bx + OFS_SALDO + 2], ax
+    jc error_overflow_deposito ; Si la bandera de acarreo se enciende, abortar
+
+    ; Si no hay desbordamiento, guardamos los nuevos valores en la memoria
+    mov word ptr [bx + OFS_SALDO], ax
+    mov word ptr [bx + OFS_SALDO + 2], cx
     
     mov ah, 09h
     lea dx, msgExito
     int 21h
     ret
     
+error_overflow_deposito:
+    mov ah, 09h
+    lea dx, msgErrOverflow
+    int 21h
+    ret
+    
 error_monto_dep:
     mov ah, 09h
     lea dx, msgErrMonto
+    int 21h
+    ret
+    
+error_formato_cuenta_dep:
+    mov ah, 09h
+    lea dx, msgErrFormato
     int 21h
     ret
 DepositarDinero endp
@@ -190,24 +248,32 @@ RetirarDinero proc
     int 21h
     call LeerYFormatearSaldo
     call ConvertirCadenaA32Bits
+    cmp error_entrada, 1
+    je error_formato_cuenta_ret
     mov dx, val_bajo
 
     ; 2. Buscar cuenta
     lea bx, db_cuentas
     mov cx, MAX_CUENTAS
 buscar_retiro:
-    mov al, [bx + OFS_ESTADO]
-    cmp al, 1
-    jne sig_retiro
     mov ax, [bx + OFS_NUMERO]
     cmp ax, dx
-    je cuenta_hallada_retiro
-sig_retiro:
+    je verificar_estado_ret
     add bx, TAMANO_REGISTRO
     loop buscar_retiro
 
     mov ah, 09h
     lea dx, msgErrCuenta
+    int 21h
+    ret
+
+verificar_estado_ret:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    je cuenta_hallada_retiro
+    
+    mov ah, 09h
+    lea dx, msgErrInact
     int 21h
     ret
 
@@ -260,6 +326,12 @@ error_monto_ret:
     lea dx, msgErrMonto
     int 21h
     ret
+    
+error_formato_cuenta_ret:
+    mov ah, 09h
+    lea dx, msgErrFormato
+    int 21h
+    ret
 RetirarDinero endp
 
 ; -----------------------------------------------------------------------------
@@ -276,19 +348,17 @@ ConsultarSaldo proc
     int 21h
     call LeerYFormatearSaldo
     call ConvertirCadenaA32Bits
+    cmp error_entrada, 1
+    je error_formato_cuenta_cons
     mov dx, val_bajo
 
     ; 2. Buscar cuenta
     lea bx, db_cuentas
     mov cx, MAX_CUENTAS
 buscar_consulta:
-    mov al, [bx + OFS_ESTADO]
-    cmp al, 1
-    jne sig_consulta
     mov ax, [bx + OFS_NUMERO]
     cmp ax, dx
-    je cuenta_hallada_consulta
-sig_consulta:
+    je verificar_estado_cons
     add bx, TAMANO_REGISTRO
     loop buscar_consulta
 
@@ -298,7 +368,25 @@ sig_consulta:
     int 21h
     ret
 
+verificar_estado_cons:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    je cuenta_hallada_consulta
+    
+    mov ah, 09h
+    lea dx, msgErrInact
+    int 21h
+    ret
+
 cuenta_hallada_consulta:
+    mov ah, 09h
+    lea dx, msgNombreEs
+    int 21h
+    
+    lea dx, [bx + OFS_NOMBRE]
+    mov ah, 09h
+    int 21h
+    
     ; 3. Imprimir texto "El saldo es..."
     mov ah, 09h
     lea dx, msgSaldoEs
@@ -311,6 +399,12 @@ cuenta_hallada_consulta:
     mov val_alto, ax
     
     call ImprimirSaldo
+    ret
+    
+error_formato_cuenta_cons:
+    mov ah, 09h
+    lea dx, msgErrFormato
+    int 21h
     ret
 ConsultarSaldo endp
 

@@ -14,7 +14,7 @@ OFS_NUMERO      equ 1   ; 2 bytes. Identificador numerico (Word).
 OFS_SALDO       equ 3   ; 4 bytes. Saldo ampliado para simulacion de 4 decimales (DWord).
 OFS_NOMBRE      equ 7   ; 20 bytes. Cadena de caracteres para el titular.
 
-TAMANO_REGISTRO equ 27  ; Longitud total en bytes de una cuenta (1+2+4+20).
+TAMANO_REGISTRO equ 28  ; Longitud total en bytes de una cuenta (1+2+4+21).
 MAX_CUENTAS     equ 10  ; Limite operativo del sistema segun requerimientos.
 
 ; -------------------------------------------------------------------------
@@ -23,7 +23,7 @@ MAX_CUENTAS     equ 10  ; Limite operativo del sistema segun requerimientos.
 ; Arreglo que contiene la totalidad de las cuentas. 
 ; Se inicializa en 0 para garantizar que todas las posiciones esten 
 ; marcadas como "Inactivas" o "Vacias" al inicio de la ejecucion.
-db_cuentas      db 270 dup(0) 
+db_cuentas      db 280 dup(0) 
 
 ; -------------------------------------------------------------------------
 ; VARIABLES GLOBALES PARA MANEJO DE MATEMATICA DE 32 BITS
