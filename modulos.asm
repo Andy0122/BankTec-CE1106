@@ -15,8 +15,87 @@
 ; POSTCONDICION: La cuenta queda almacenada y su estado se inicializa como Activa.
 ; -----------------------------------------------------------------------------
 CrearCuenta proc
+    ; 1. Pedir el numero de cuenta al usuario
     mov ah, 09h
-    lea dx, msgConstruccion
+    lea dx, msgPedirCuenta
+    int 21h
+    
+    call LeerYFormatearSaldo
+    call ConvertirCadenaA32Bits
+    
+    ; Guardamos el numero digitado en DX para usarlo de referencia
+    mov dx, val_bajo
+    push dx ; Protegemos el numero en la pila
+
+    ; 2. Verificar que la cuenta no exista previamente
+    lea bx, db_cuentas
+    mov cx, MAX_CUENTAS
+check_existe:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    jne skip_check
+    mov ax, [bx + OFS_NUMERO]
+    cmp ax, dx
+    je error_existe
+skip_check:
+    add bx, TAMANO_REGISTRO
+    loop check_existe
+
+    ; 3. Buscar espacio libre (OFS_ESTADO == 0)
+    lea bx, db_cuentas
+    mov cx, MAX_CUENTAS
+buscar_espacio:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 0
+    je pedir_saldo
+    add bx, TAMANO_REGISTRO
+    loop buscar_espacio
+
+    ; Si llega aqui, no hay espacio (Retornamos)
+    pop dx
+    ret
+
+error_existe:
+    pop dx
+    mov ah, 09h
+    lea dx, msgErrExiste
+    int 21h
+    ret
+
+pedir_saldo:
+    ; 4. Pedir el saldo inicial
+    push bx ; Protegemos la direccion de memoria encontrada
+    
+    mov ah, 09h
+    lea dx, msgPedirMonto
+    int 21h
+    
+    call LeerYFormatearSaldo
+    call ConvertirCadenaA32Bits
+    
+    pop bx ; Recuperamos la direccion de memoria
+    pop dx ; Recuperamos el ID de la cuenta
+
+    cmp error_entrada, 1
+    je error_monto_crear
+
+    ; 5. Guardar todo en memoria
+    mov byte ptr [bx + OFS_ESTADO], 1  ; Activar
+    mov word ptr [bx + OFS_NUMERO], dx ; Guardar ID
+    
+    mov ax, val_bajo                   ; Guardar saldo (32 bits)
+    mov word ptr [bx + OFS_SALDO], ax
+    mov ax, val_alto
+    mov word ptr [bx + OFS_SALDO + 2], ax
+    
+    mov ah, 09h
+    lea dx, msgExito
+    int 21h
+    ret
+
+error_monto_crear:
+    mov ah, 09h
+    lea dx, msgErrMonto
     int 21h
     ret
 CrearCuenta endp
@@ -31,8 +110,64 @@ CrearCuenta endp
 ; POSTCONDICION: El saldo de la cuenta especifica se actualiza sumando el monto.
 ; -----------------------------------------------------------------------------
 DepositarDinero proc
+    ; 1. Pedir cuenta
     mov ah, 09h
-    lea dx, msgConstruccion
+    lea dx, msgPedirCuenta
+    int 21h
+    call LeerYFormatearSaldo
+    call ConvertirCadenaA32Bits
+    mov dx, val_bajo
+
+    ; 2. Buscar cuenta
+    lea bx, db_cuentas
+    mov cx, MAX_CUENTAS
+buscar_deposito:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    jne sig_deposito
+    mov ax, [bx + OFS_NUMERO]
+    cmp ax, dx
+    je cuenta_hallada_deposito
+sig_deposito:
+    add bx, TAMANO_REGISTRO
+    loop buscar_deposito
+
+    ; Si no encuentra
+    mov ah, 09h
+    lea dx, msgErrCuenta
+    int 21h
+    ret
+
+cuenta_hallada_deposito:
+    ; 3. Pedir monto
+    push bx ; Proteger memoria
+    mov ah, 09h
+    lea dx, msgPedirMonto
+    int 21h
+    call LeerYFormatearSaldo
+    call ConvertirCadenaA32Bits
+    pop bx  ; Recuperar memoria
+    
+    cmp error_entrada, 1
+    je error_monto_dep
+    
+    ; 4. Sumar (ADD y ADC para los 32 bits)
+    mov ax, word ptr [bx + OFS_SALDO]
+    add ax, val_bajo
+    mov word ptr [bx + OFS_SALDO], ax
+    
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    adc ax, val_alto
+    mov word ptr [bx + OFS_SALDO + 2], ax
+    
+    mov ah, 09h
+    lea dx, msgExito
+    int 21h
+    ret
+    
+error_monto_dep:
+    mov ah, 09h
+    lea dx, msgErrMonto
     int 21h
     ret
 DepositarDinero endp
@@ -49,8 +184,80 @@ DepositarDinero endp
 ;                por fondos insuficientes.
 ; -----------------------------------------------------------------------------
 RetirarDinero proc
+    ; 1. Pedir cuenta
     mov ah, 09h
-    lea dx, msgConstruccion
+    lea dx, msgPedirCuenta
+    int 21h
+    call LeerYFormatearSaldo
+    call ConvertirCadenaA32Bits
+    mov dx, val_bajo
+
+    ; 2. Buscar cuenta
+    lea bx, db_cuentas
+    mov cx, MAX_CUENTAS
+buscar_retiro:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    jne sig_retiro
+    mov ax, [bx + OFS_NUMERO]
+    cmp ax, dx
+    je cuenta_hallada_retiro
+sig_retiro:
+    add bx, TAMANO_REGISTRO
+    loop buscar_retiro
+
+    mov ah, 09h
+    lea dx, msgErrCuenta
+    int 21h
+    ret
+
+cuenta_hallada_retiro:
+    ; 3. Pedir monto
+    push bx 
+    mov ah, 09h
+    lea dx, msgPedirMonto
+    int 21h
+    call LeerYFormatearSaldo
+    call ConvertirCadenaA32Bits
+    pop bx  
+    
+    cmp error_entrada, 1
+    je error_monto_ret
+    
+    ; 4. Validar fondos (Comparar 32 bits)
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    cmp ax, val_alto
+    jb fondos_insuficientes
+    ja realizar_retiro
+    
+    mov ax, word ptr [bx + OFS_SALDO]
+    cmp ax, val_bajo
+    jb fondos_insuficientes
+
+realizar_retiro:
+    ; 5. Restar (SUB y SBB)
+    mov ax, word ptr [bx + OFS_SALDO]
+    sub ax, val_bajo
+    mov word ptr [bx + OFS_SALDO], ax
+    
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    sbb ax, val_alto
+    mov word ptr [bx + OFS_SALDO + 2], ax
+    
+    mov ah, 09h
+    lea dx, msgExito
+    int 21h
+    ret
+
+fondos_insuficientes:
+    mov ah, 09h
+    lea dx, msgErrFondos
+    int 21h
+    ret
+
+error_monto_ret:
+    mov ah, 09h
+    lea dx, msgErrMonto
     int 21h
     ret
 RetirarDinero endp
@@ -63,9 +270,47 @@ RetirarDinero endp
 ;                formateado correctamente (incluyendo la simulacion de decimales).
 ; -----------------------------------------------------------------------------
 ConsultarSaldo proc
+    ; 1. Pedir cuenta
     mov ah, 09h
-    lea dx, msgConstruccion
+    lea dx, msgPedirCuenta
     int 21h
+    call LeerYFormatearSaldo
+    call ConvertirCadenaA32Bits
+    mov dx, val_bajo
+
+    ; 2. Buscar cuenta
+    lea bx, db_cuentas
+    mov cx, MAX_CUENTAS
+buscar_consulta:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    jne sig_consulta
+    mov ax, [bx + OFS_NUMERO]
+    cmp ax, dx
+    je cuenta_hallada_consulta
+sig_consulta:
+    add bx, TAMANO_REGISTRO
+    loop buscar_consulta
+
+    ; Si no se encuentra
+    mov ah, 09h
+    lea dx, msgErrCuenta
+    int 21h
+    ret
+
+cuenta_hallada_consulta:
+    ; 3. Imprimir texto "El saldo es..."
+    mov ah, 09h
+    lea dx, msgSaldoEs
+    int 21h
+
+    ; 4. Preparar variables para ImprimirSaldo
+    mov ax, word ptr [bx + OFS_SALDO]
+    mov val_bajo, ax
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    mov val_alto, ax
+    
+    call ImprimirSaldo
     ret
 ConsultarSaldo endp
 

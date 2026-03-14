@@ -31,3 +31,9 @@
     msgErrInact  db 0Dh, 0Ah, ">> ERROR: La operacion no se puede realizar. La cuenta esta inactiva.", 0Dh, 0Ah, "$"
     msgErrFondos db 0Dh, 0Ah, ">> ERROR: Fondos insuficientes para realizar el retiro.", 0Dh, 0Ah, "$"
     msgErrExiste db 0Dh, 0Ah, ">> ERROR: El numero de cuenta ya se encuentra registrado.", 0Dh, 0Ah, "$"
+    
+    ; --- MENSAJES DE INTERACCION ---
+    msgPedirCuenta db 0Dh, 0Ah, ">> Ingrese el numero de cuenta: $"
+    msgPedirMonto  db 0Dh, 0Ah, ">> Ingrese el monto: $"
+    msgExito       db 0Dh, 0Ah, ">> Operacion realizada con exito.", 0Dh, 0Ah, "$"
+    msgSaldoEs     db 0Dh, 0Ah, ">> El saldo actual de la cuenta es: $"
