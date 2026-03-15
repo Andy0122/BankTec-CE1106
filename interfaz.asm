@@ -15,7 +15,7 @@
                  db 0Dh, 0Ah, "6. Desactivar cuenta"
                  db 0Dh, 0Ah, "7. Salir"
                  db 0Dh, 0Ah, "---------------------------------------"
-                 db 0Dh, 0Ah, "Seleccione una opcion: $"
+                 db 0Dh, 0Ah, "Seleccione una opcion: $" 
 
     msgError     db 0Dh, 0Ah, ">> ERROR: Opcion invalida. Intente de nuevo.", 0Dh, 0Ah, "$"
     msgDespedida db 0Dh, 0Ah, ">> Gracias por usar BankTec. Cerrando sistema...$"

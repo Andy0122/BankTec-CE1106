@@ -16,7 +16,16 @@ main:
     mov ax, @data
     mov ds, ax
 
-ciclo_principal:
+ciclo_principal: 
+    push ax          ; Proteger el registro AX
+    
+    mov ax, 0003h    ; AH = 00h (Establecer modo de video)
+                     ; AL = 03h (Modo texto 80x25, 16 colores)
+    int 10h          ; Llamada a la interrupcion de video del BIOS
+    
+    pop ax           ; Restaurar el registro AX
+    
+    
     ; Despliegue del encabezado y opciones disponibles.
     mov ah, 09h
     lea dx, msgLogo
