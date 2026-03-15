@@ -435,8 +435,55 @@ MostrarReporte endp
 ; POSTCONDICION: El byte de estado de la cuenta en memoria cambia a Inactiva.
 ; -----------------------------------------------------------------------------
 DesactivarCuenta proc
+    ; 1. Pedir cuenta
     mov ah, 09h
-    lea dx, msgConstruccion
+    lea dx, msgPedirCuenta
+    int 21h
+    call LeerYFormatearSaldo
+    call ConvertirCadenaA32Bits
+    cmp error_entrada, 1
+    je error_formato_desactivar
+    mov dx, val_bajo
+
+    ; 2. Buscar cuenta
+    lea bx, db_cuentas
+    mov cx, MAX_CUENTAS
+buscar_desactivar:
+    mov ax, [bx + OFS_NUMERO]
+    cmp ax, dx
+    je verificar_estado_desactivar
+    add bx, TAMANO_REGISTRO
+    loop buscar_desactivar
+
+    ; Si no se encuentra
+    mov ah, 09h
+    lea dx, msgErrCuenta
+    int 21h
+    ret
+
+verificar_estado_desactivar:
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    je desactivar_cuenta
+    
+    ; Si ya esta inactiva
+    mov ah, 09h
+    lea dx, msgErrInact
+    int 21h
+    ret
+
+desactivar_cuenta:
+    ; 3. Cambiar estado a inactivo (0)
+    mov byte ptr [bx + OFS_ESTADO], 0
+    
+    mov ah, 09h
+    lea dx, msgExito
+    int 21h
+    ret
+    
+error_formato_desactivar:
+    mov ah, 09h
+    lea dx, msgErrFormato
     int 21h
     ret
 DesactivarCuenta endp
