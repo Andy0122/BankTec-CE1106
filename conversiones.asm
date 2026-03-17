@@ -237,3 +237,48 @@ imprimir_digito:
 
     ret
 ImprimirSaldo endp
+
+; -----------------------------------------------------------------------------
+; PROCEDIMIENTO: ImprimirNumero16
+; DESCRIPCION:   Imprime un numero de 16 bits en decimal.
+; PARAMETROS:    AX = numero a imprimir
+; -----------------------------------------------------------------------------
+ImprimirNumero16 proc
+    push ax
+    push bx
+    push cx
+    push dx
+
+    mov bx, 10                   ; Divisor
+    mov cx, 0                    ; Contador de digitos
+
+    cmp ax, 0
+    jne dividir
+    ; Si es 0, imprimir 0
+    mov dl, '0'
+    mov ah, 02h
+    int 21h
+    jmp fin_imprimir_num
+
+dividir:
+    mov dx, 0
+    div bx                       ; AX / 10, cociente en AX, residuo en DX
+    push dx                      ; Guardar residuo
+    inc cx
+    cmp ax, 0
+    jne dividir
+
+imprimir_digitos:
+    pop dx
+    add dl, 30h
+    mov ah, 02h
+    int 21h
+    loop imprimir_digitos
+
+fin_imprimir_num:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+ImprimirNumero16 endp

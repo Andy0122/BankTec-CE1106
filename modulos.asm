@@ -115,6 +115,12 @@ fin_nombre:
     mov ax, val_alto
     mov word ptr [bx + OFS_SALDO + 2], ax
     
+    ; Sumar al saldo total
+    mov ax, val_bajo
+    add word ptr saldo_total_bajo, ax
+    mov ax, val_alto
+    adc word ptr saldo_total_alto, ax
+    
     mov ah, 09h
     lea dx, msgExito
     int 21h
@@ -205,6 +211,12 @@ cuenta_hallada_deposito:
     ; Si no hay desbordamiento, guardamos los nuevos valores en la memoria
     mov word ptr [bx + OFS_SALDO], ax
     mov word ptr [bx + OFS_SALDO + 2], cx
+    
+    ; Sumar al saldo total
+    mov ax, val_bajo
+    add word ptr saldo_total_bajo, ax
+    mov ax, val_alto
+    adc word ptr saldo_total_alto, ax
     
     mov ah, 09h
     lea dx, msgExito
@@ -309,6 +321,12 @@ realizar_retiro:
     mov ax, word ptr [bx + OFS_SALDO + 2]
     sbb ax, val_alto
     mov word ptr [bx + OFS_SALDO + 2], ax
+    
+    ; Restar del saldo total
+    mov ax, val_bajo
+    sub word ptr saldo_total_bajo, ax
+    mov ax, val_alto
+    sbb word ptr saldo_total_alto, ax
     
     mov ah, 09h
     lea dx, msgExito
@@ -420,9 +438,171 @@ ConsultarSaldo endp
 ;                - Identificador de la cuenta con el saldo mas bajo.
 ; -----------------------------------------------------------------------------
 MostrarReporte proc
+    ; Inicializar contadores
+    mov cx, MAX_CUENTAS          ; 10 cuentas
+    lea bx, db_cuentas           ; Puntero al arreglo
+    mov si, 0                    ; Contador activas
+    mov ax, word ptr saldo_total_alto
+    mov val_alto, ax
+    mov ax, word ptr saldo_total_bajo
+    mov val_bajo, ax
+    mov word ptr temp_max_alto, 0
+    mov word ptr temp_max_bajo, 0
+    mov word ptr temp_max_num, 0
+    mov word ptr temp_min_alto, 0FFFFh
+    mov word ptr temp_min_bajo, 0FFFFh
+    mov word ptr temp_min_num, 0
+    mov byte ptr temp_flag, 0
+
+recorrer_cuentas:
+    ; Verificar estado
+    mov al, [bx + OFS_ESTADO]
+    cmp al, 1
+    je es_activa
+    ; Es inactiva
+    jmp sumar_saldo
+
+es_activa:
+    inc si
+    ; Ver si es la primera
+    cmp byte ptr temp_flag, 0
+    jne comparar_max_min
+    ; Primera activa
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    mov word ptr temp_max_alto, ax
+    mov ax, word ptr [bx + OFS_SALDO]
+    mov word ptr temp_max_bajo, ax
+    mov ax, word ptr [bx + OFS_NUMERO]
+    mov word ptr temp_max_num, ax
+    ; Copiar a min
+    mov ax, word ptr temp_max_alto
+    mov word ptr temp_min_alto, ax
+    mov ax, word ptr temp_max_bajo
+    mov word ptr temp_min_bajo, ax
+    mov word ptr temp_min_num, ax  ; ax is the number
+    mov byte ptr temp_flag, 1
+    jmp sumar_saldo
+
+comparar_max_min:
+    ; Comparar con max
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    cmp ax, word ptr temp_max_alto
+    ja actualizar_max
+    jb comparar_min
+    ; Altos iguales, comparar bajos
+    mov ax, word ptr [bx + OFS_SALDO]
+    cmp ax, word ptr temp_max_bajo
+    jbe comparar_min
+actualizar_max:
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    mov word ptr temp_max_alto, ax
+    mov ax, word ptr [bx + OFS_SALDO]
+    mov word ptr temp_max_bajo, ax
+    mov ax, word ptr [bx + OFS_NUMERO]
+    mov word ptr temp_max_num, ax
+
+comparar_min:
+    ; Comparar con min
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    cmp ax, word ptr temp_min_alto
+    jb actualizar_min
+    ja sumar_saldo
+    ; Altos iguales, comparar bajos
+    mov ax, word ptr [bx + OFS_SALDO]
+    cmp ax, word ptr temp_min_bajo
+    jae sumar_saldo
+actualizar_min:
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    mov word ptr temp_min_alto, ax
+    mov ax, word ptr [bx + OFS_SALDO]
+    mov word ptr temp_min_bajo, ax
+    mov ax, word ptr [bx + OFS_NUMERO]
+    mov word ptr temp_min_num, ax
+
+sumar_saldo:
+    ; Siguiente cuenta
+    add bx, TAMANO_REGISTRO
+    loop recorrer_cuentas
+
+    ; Imprimir reporte
     mov ah, 09h
-    lea dx, msgConstruccion
+    lea dx, msgReporteTitulo
     int 21h
+
+    ; Total activas
+    mov ah, 09h
+    lea dx, msgTotalActivas
+    int 21h
+    mov ax, si
+    call ImprimirNumero16
+
+    ; Total inactivas
+    mov ah, 09h
+    lea dx, msgTotalInactivas
+    int 21h
+    mov ax, word ptr total_inactivas
+    call ImprimirNumero16
+
+    ; Saldo total
+    mov ah, 09h
+    lea dx, msgSaldoTotal
+    int 21h
+    call ImprimirSaldo
+
+    ; Cuenta mayor saldo
+    mov ah, 09h
+    lea dx, msgCuentaMayor
+    int 21h
+    cmp byte ptr temp_flag, 0
+    je no_activas
+    mov ax, word ptr temp_max_bajo
+    mov val_bajo, ax
+    mov ax, word ptr temp_max_alto
+    mov val_alto, ax
+    call ImprimirSaldo
+    mov ah, 09h
+    lea dx, msgIDParentesis
+    int 21h
+    mov ax, word ptr temp_max_num
+    call ImprimirNumero16
+    mov ah, 09h
+    lea dx, msgCerrarParentesis
+    int 21h
+    jmp cuenta_menor
+
+no_activas:
+    mov ah, 09h
+    lea dx, msgNoCuentas
+    int 21h
+
+cuenta_menor:
+    ; Cuenta menor saldo
+    mov ah, 09h
+    lea dx, msgCuentaMenor
+    int 21h
+    cmp byte ptr temp_flag, 0
+    je no_activas2
+    mov ax, word ptr temp_min_bajo
+    mov val_bajo, ax
+    mov ax, word ptr temp_min_alto
+    mov val_alto, ax
+    call ImprimirSaldo
+    mov ah, 09h
+    lea dx, msgIDParentesis
+    int 21h
+    mov ax, word ptr temp_min_num
+    call ImprimirNumero16
+    mov ah, 09h
+    lea dx, msgCerrarParentesis
+    int 21h
+    jmp fin_reporte
+
+no_activas2:
+    mov ah, 09h
+    lea dx, msgNoCuentas
+    int 21h
+
+fin_reporte:
     ret
 MostrarReporte endp
 
@@ -474,7 +654,14 @@ verificar_estado_desactivar:
 
 desactivar_cuenta:
     ; 3. Cambiar estado a inactivo (0)
+    ; Restar saldo actual del total
+    mov ax, word ptr [bx + OFS_SALDO]
+    sub word ptr saldo_total_bajo, ax
+    mov ax, word ptr [bx + OFS_SALDO + 2]
+    sbb word ptr saldo_total_alto, ax
+    
     mov byte ptr [bx + OFS_ESTADO], 0
+    inc total_inactivas
     
     mov ah, 09h
     lea dx, msgExito

@@ -47,3 +47,25 @@ buffer_teclado  db 20        ; Capacidad maxima de lectura.
 buffer_limpio   db 20 dup(0) ; Almacena la cadena procesada sin punto decimal.
 len_limpio      db 0         ; Cantidad de digitos validos en buffer_limpio.   
 error_entrada   db 0         ; Bandera de validacion. 0 = Exito, 1 = Desbordamiento/Error
+
+; ------------------------------------------------------------------------- 
+; VARIABLES TEMPORALES PARA REPORTE
+; -------------------------------------------------------------------------
+temp_max_alto   dw 0
+temp_max_bajo   dw 0
+temp_max_num    dw 0
+temp_min_alto   dw 0FFFFh
+temp_min_bajo   dw 0FFFFh
+temp_min_num    dw 0
+temp_flag       db 0
+
+; ------------------------------------------------------------------------- 
+; CONTADORES GLOBALES PARA REPORTE
+; -------------------------------------------------------------------------
+total_inactivas dw 0
+
+; ------------------------------------------------------------------------- 
+; SALDO TOTAL GLOBAL
+; -------------------------------------------------------------------------
+saldo_total_alto dw 0
+saldo_total_bajo dw 0

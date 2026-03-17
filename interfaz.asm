@@ -42,3 +42,14 @@
     msgExito       db 0Dh, 0Ah, ">> Operacion realizada con exito.", 0Dh, 0Ah, "$"
     msgNombreEs    db 0Dh, 0Ah, ">> Titular: $"
     msgSaldoEs     db 0Dh, 0Ah, ">> El saldo actual de la cuenta es: $"
+    
+    ; --- MENSAJES PARA REPORTE ---
+    msgReporteTitulo db 0Dh, 0Ah, "========== REPORTE GENERAL ==========", 0Dh, 0Ah, "$"
+    msgTotalActivas  db 0Dh, 0Ah, "Total de cuentas activas: $"
+    msgTotalInactivas db 0Dh, 0Ah, "Total de cuentas inactivas: $"
+    msgSaldoTotal    db 0Dh, 0Ah, "Saldo total del banco: $"
+    msgCuentaMayor   db 0Dh, 0Ah, "Saldo mayor: $"
+    msgCuentaMenor   db 0Dh, 0Ah, "Saldo menor: $"
+    msgNoCuentas     db " (No hay cuentas activas)$"
+    msgIDParentesis  db " (ID: $"
+    msgCerrarParentesis db ")$"
