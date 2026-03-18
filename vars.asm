@@ -68,4 +68,6 @@ total_inactivas dw 0
 ; SALDO TOTAL GLOBAL
 ; -------------------------------------------------------------------------
 saldo_total_alto dw 0
-saldo_total_bajo dw 0
+saldo_total_bajo dw 0   
+
+error_banco     db 0         ; Bandera si el banco excede los 32 bits

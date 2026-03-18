@@ -281,4 +281,41 @@ fin_imprimir_num:
     pop bx
     pop ax
     ret
-ImprimirNumero16 endp
+ImprimirNumero16 endp       
+
+; -----------------------------------------------------------------------------
+; PROCEDIMIENTO: LeerCadenaEntera
+; DESCRIPCION:   Lee un numero entero (como un ID).
+; -----------------------------------------------------------------------------
+LeerCadenaEntera proc
+    mov error_entrada, 0
+    
+    mov ah, 0Ah
+    lea dx, buffer_teclado
+    int 21h
+    
+    mov cl,[buffer_teclado + 1]
+    mov ch, 0
+    cmp cx, 0
+    je ocurrio_error_entero
+    
+    lea si, buffer_teclado + 2
+    lea di, buffer_limpio
+    mov len_limpio, cl
+    
+ciclo_entero:
+    mov al, [si]
+    cmp al, '0'
+    jb ocurrio_error_entero
+    cmp al, '9'
+    ja ocurrio_error_entero
+    mov [di], al
+    inc si
+    inc di
+    loop ciclo_entero
+    ret
+    
+ocurrio_error_entero:
+    mov error_entrada, 1
+    ret
+LeerCadenaEntera endp

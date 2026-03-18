@@ -20,7 +20,7 @@ CrearCuenta proc
     lea dx, msgPedirCuenta
     int 21h
     
-    call LeerYFormatearSaldo
+    call LeerCadenaEntera
     call ConvertirCadenaA32Bits
     
     cmp error_entrada, 1
@@ -119,7 +119,13 @@ fin_nombre:
     mov ax, val_bajo
     add word ptr saldo_total_bajo, ax
     mov ax, val_alto
-    adc word ptr saldo_total_alto, ax
+    adc word ptr saldo_total_alto, ax  
+    
+    ; --- NUEVA VALIDACION DE DESBORDAMIENTO GLOBAL ---
+    jnc fin_suma_total           ; Si no hay acarreo, salta y continua normal
+    mov byte ptr error_banco, 1  ; Si hay acarreo, activa la bandera de error global
+    
+fin_suma_total:
     
     mov ah, 09h
     lea dx, msgExito
@@ -153,7 +159,7 @@ DepositarDinero proc
     mov ah, 09h
     lea dx, msgPedirCuenta
     int 21h
-    call LeerYFormatearSaldo
+    call LeerCadenaEntera
     call ConvertirCadenaA32Bits
     cmp error_entrada, 1
     je error_formato_cuenta_dep
@@ -216,7 +222,12 @@ cuenta_hallada_deposito:
     mov ax, val_bajo
     add word ptr saldo_total_bajo, ax
     mov ax, val_alto
-    adc word ptr saldo_total_alto, ax
+    adc word ptr saldo_total_alto, ax 
+    ; --- NUEVA VALIDACION DE DESBORDAMIENTO GLOBAL ---
+    jnc fin_suma_total2           ; Si no hay acarreo, salta y continua normal
+    mov byte ptr error_banco, 1  ; Si hay acarreo, activa la bandera de error global
+    
+fin_suma_total2:
     
     mov ah, 09h
     lea dx, msgExito
@@ -258,7 +269,7 @@ RetirarDinero proc
     mov ah, 09h
     lea dx, msgPedirCuenta
     int 21h
-    call LeerYFormatearSaldo
+    call LeerCadenaEntera
     call ConvertirCadenaA32Bits
     cmp error_entrada, 1
     je error_formato_cuenta_ret
@@ -364,7 +375,7 @@ ConsultarSaldo proc
     mov ah, 09h
     lea dx, msgPedirCuenta
     int 21h
-    call LeerYFormatearSaldo
+    call LeerCadenaEntera
     call ConvertirCadenaA32Bits
     cmp error_entrada, 1
     je error_formato_cuenta_cons
@@ -479,7 +490,8 @@ es_activa:
     mov word ptr temp_min_alto, ax
     mov ax, word ptr temp_max_bajo
     mov word ptr temp_min_bajo, ax
-    mov word ptr temp_min_num, ax  ; ax is the number
+    mov ax, word ptr temp_max_num  
+    mov word ptr temp_min_num, ax  
     mov byte ptr temp_flag, 1
     jmp sumar_saldo
 
@@ -547,7 +559,19 @@ sumar_saldo:
     mov ah, 09h
     lea dx, msgSaldoTotal
     int 21h
+    
+    ; --- NUEVA REVISION DE ERROR ANTES DE IMPRIMIR ---
+    cmp byte ptr error_banco, 1
+    je imprimir_error_inflacion
     call ImprimirSaldo
+    jmp cuenta_mayor
+    
+imprimir_error_inflacion:
+    mov ah, 09h
+    lea dx, msgErrBanco
+    int 21h
+
+cuenta_mayor:
 
     ; Cuenta mayor saldo
     mov ah, 09h
@@ -619,7 +643,7 @@ DesactivarCuenta proc
     mov ah, 09h
     lea dx, msgPedirCuenta
     int 21h
-    call LeerYFormatearSaldo
+    call LeerCadenaEntera
     call ConvertirCadenaA32Bits
     cmp error_entrada, 1
     je error_formato_desactivar

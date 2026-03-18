@@ -34,6 +34,7 @@
     msgErrExiste db 0Dh, 0Ah, ">> ERROR: El numero de cuenta ya se encuentra registrado.", 0Dh, 0Ah, "$"
     msgErrLleno    db 0Dh, 0Ah, ">> ERROR: Sistema lleno. Limite de 10 cuentas alcanzado.", 0Dh, 0Ah, "$"
     msgErrOverflow db 0Dh, 0Ah, ">> ERROR: La operacion excede el limite maximo de los 32 bits.", 0Dh, 0Ah, "$"
+    msgErrBanco db 0Dh, 0Ah, ">> ERROR: La sumatoria total excede el limite de 32 bits.$"
     
     ; --- MENSAJES DE INTERACCION ---
     msgPedirCuenta db 0Dh, 0Ah, ">> Ingrese el numero de cuenta: $"

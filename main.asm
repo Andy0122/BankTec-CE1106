@@ -20,7 +20,6 @@ ciclo_principal:
     push ax          ; Proteger el registro AX
     
     mov ax, 0003h    ; AH = 00h (Establecer modo de video)
-                     ; AL = 03h (Modo texto 80x25, 16 colores)
     int 10h          ; Llamada a la interrupcion de video del BIOS
     
     pop ax           ; Restaurar el registro AX
@@ -54,8 +53,6 @@ ciclo_principal:
     je op_desactivar
     cmp al, '7'
     je op_salir  
-    cmp al, '8'
-    je op_prueba
 
     ; Manejo de excepcion para selecciones fuera de rango.
     mov ah, 09h
@@ -101,35 +98,6 @@ op_salir:
     mov ah, 4Ch
     int 21h
              
-op_prueba:
-
-    mov ah, 09h
-    lea dx, msgPausa 
-    int 21h
-
-    call LeerYFormatearSaldo
-
-    call ConvertirCadenaA32Bits
-
-    ; VALIDADOR DE DESBORDAMIENTO 
-    cmp error_entrada, 1
-    je rechazar_monto
-
-    mov ah, 02h
-    mov dl, '-'
-    int 21h
-    mov dl, '>'
-    int 21h
-    call ImprimirSaldo
-    jmp pausa_menu
-
-rechazar_monto:
-    mov ah, 09h
-    lea dx, msgErrMonto
-    int 21h
-    jmp pausa_menu
-             
-   
 ; =====================================================================
 ; UTILIDADES DE INTERFAZ
 ; =====================================================================
