@@ -9,7 +9,7 @@
 ; Los offsets representan el desplazamiento en bytes desde la direccion 
 ; base de un registro para acceder a un campo especifico.
 ; -------------------------------------------------------------------------
-OFS_ESTADO      equ 0   ; 1 byte.  Valores: 0 = Inactiva/Vacia, 1 = Activa.
+OFS_ESTADO      equ 0   ; 1 byte.  Valores: 0 = Vacia, 1 = Activa, 2 = Inactiva.
 OFS_NUMERO      equ 1   ; 2 bytes. Identificador numerico (Word).
 OFS_SALDO       equ 3   ; 4 bytes. Saldo ampliado para simulacion de 4 decimales (DWord).
 OFS_NOMBRE      equ 7   ; 20 bytes. Cadena de caracteres para el titular.

@@ -677,14 +677,14 @@ verificar_estado_desactivar:
     ret
 
 desactivar_cuenta:
-    ; 3. Cambiar estado a inactivo (0)
+    ; 3. Cambiar estado a inactivo (2)
     ; Restar saldo actual del total
     mov ax, word ptr [bx + OFS_SALDO]
     sub word ptr saldo_total_bajo, ax
     mov ax, word ptr [bx + OFS_SALDO + 2]
     sbb word ptr saldo_total_alto, ax
     
-    mov byte ptr [bx + OFS_ESTADO], 0
+    mov byte ptr [bx + OFS_ESTADO], 2
     inc total_inactivas
     
     mov ah, 09h
