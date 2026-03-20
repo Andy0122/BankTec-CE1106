@@ -1,4 +1,4 @@
-1.model small
+.model small
 .stack 100h
 
 .data

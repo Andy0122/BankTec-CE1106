@@ -453,6 +453,10 @@ MostrarReporte proc
     mov cx, MAX_CUENTAS          ; 10 cuentas
     lea bx, db_cuentas           ; Puntero al arreglo
     mov si, 0                    ; Contador activas
+    mov ax, word ptr saldo_total_alto
+    mov val_alto, ax
+    mov ax, word ptr saldo_total_bajo
+    mov val_bajo, ax
     mov word ptr temp_max_alto, 0
     mov word ptr temp_max_bajo, 0
     mov word ptr temp_max_num, 0
@@ -531,11 +535,6 @@ sumar_saldo:
     ; Siguiente cuenta
     add bx, TAMANO_REGISTRO
     loop recorrer_cuentas
-    
-    ; Calculo de cuentas inactivas
-    mov ax, MAX_CUENTAS
-    sub ax, si   ; Restar las activas (SI) al total (10)
-    mov word ptr total_inactivas, ax
 
     ; Imprimir reporte
     mov ah, 09h
@@ -564,12 +563,6 @@ sumar_saldo:
     ; --- NUEVA REVISION DE ERROR ANTES DE IMPRIMIR ---
     cmp byte ptr error_banco, 1
     je imprimir_error_inflacion
-    
-    mov ax, word ptr saldo_total_alto
-    mov val_alto, ax
-    mov ax, word ptr saldo_total_bajo
-    mov val_bajo, ax
-    
     call ImprimirSaldo
     jmp cuenta_mayor
     
@@ -692,6 +685,7 @@ desactivar_cuenta:
     sbb word ptr saldo_total_alto, ax
     
     mov byte ptr [bx + OFS_ESTADO], 0
+    inc total_inactivas
     
     mov ah, 09h
     lea dx, msgExito
